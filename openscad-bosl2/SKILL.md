@@ -61,6 +61,8 @@ If the user's intent is unclear — e.g. they could plausibly want either a fast
 
 Use raw `cube`/`cylinder` only when you genuinely need them.
 
+There's no need to scan existing projects to determine style, use the guides in this skill.
+
 ### Anchor everything explicitly
 
 Pick a deliberate reference point on every primitive — `anchor=BOTTOM+LEFT+FRONT`, `anchor=TOP`, etc. Don't rely on default centering. This makes positioning robust to dimension changes.
