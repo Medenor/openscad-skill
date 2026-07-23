@@ -136,13 +136,30 @@ for f in "${files[@]}"; do
             target="$f.png"
         fi
     fi
-    if msg=$("$OPENSCAD" "${base_flags[@]}" -o "$target" "$f" 2>&1); then
-        printf '%s -> %s\n' "$f" "$target"
+    # Render to a fresh temp path in the target's directory, then move it into
+    # place. OpenSCAD can exit 0 without producing a file, and in-place
+    # overwrites of an existing PNG have been observed to silently no-op while
+    # writing to a new path succeeds. Trusting the exit code alone therefore
+    # reports a stale PNG as a fresh success. Writing to a new path, verifying a
+    # non-empty file appeared, and atomically mv'ing over the target avoids both.
+    case "$target" in
+        *.*) tmp="${target%.*}.tmp.$$.$RANDOM.${target##*.}" ;;
+        *)   tmp="${target}.tmp.$$.$RANDOM" ;;
+    esac
+    rm -f "$tmp"
+    if msg=$("$OPENSCAD" "${base_flags[@]}" -o "$tmp" "$f" 2>&1) && [[ -s "$tmp" ]]; then
+        if mv -f "$tmp" "$target"; then
+            printf '%s -> %s\n' "$f" "$target"
+        else
+            rc=1
+            printf '%s: FAILED (rendered but could not move into place)\n' "$f" >&2
+            rm -f "$tmp"
+        fi
     else
         rc=1
         printf '%s: FAILED\n' "$f" >&2
         printf '%s\n' "$msg" | sed 's/^/  /' >&2
-        rm -f "$target"
+        rm -f "$tmp"
     fi
 done
 
